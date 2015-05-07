@@ -1,6 +1,12 @@
 open Core_kernel.Std
 open Opium.Std
 
+module TodoStorage = Caml.Map.Make(Int)
+
+Random.self_init()
+
+let stored_todos = ref TodoStorage.empty
+
 let add_cors_headers (headers: Cohttp.Header.t): Cohttp.Header.t =
   Cohttp.Header.add_list headers [
     ("access-control-allow-origin", "*");
@@ -36,12 +42,14 @@ let print_param = put "/hello/:name" begin fun req ->
 end
 
 let get_todos = get "/todos" begin fun _ ->
-  `Json ([] |> json_of_todos) |> respond'
+  let todos = TodoStorage.fold (fun _ value acc -> value :: acc) !stored_todos [];
+  in
+    `Json (todos |> json_of_todos) |> respond'
 end
 
 let post_todos = post "/todos" begin fun request ->
   App.json_of_body_exn request 
-  >>| fun (json: Ezjsonm.t) -> `Json (json |> Ezjsonm.value |> Ezjsonm.wrap)
+  >>| fun json -> stored_todos := TodoStorage.add (Random.int 100000) (Ezjsonm.value json) !stored_todos; `Json json
   |> respond
 end
 
