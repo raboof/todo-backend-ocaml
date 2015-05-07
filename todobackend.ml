@@ -53,6 +53,11 @@ let post_todos = post "/todos" begin fun request ->
   |> respond
 end
 
+let delete_todos = delete "/todos" begin fun _ ->
+  stored_todos := TodoStorage.empty;
+  respond' (`String "OK")
+end
+
 let accept_options = App.options "/:anything" begin fun _ -> 
   respond' (`String "OK")
 end
@@ -62,5 +67,6 @@ let _ =
   |> middleware allow_cors
   |> accept_options
   |> get_todos
+  |> delete_todos
   |> post_todos
   |> App.run_command
