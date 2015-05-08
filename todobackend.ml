@@ -47,7 +47,7 @@ let todo_of_json json id =
 
 let todo_of_json json = todo_of_json (Ezjsonm.value json)
 
-let json_of_todo { title ; url ; completed }: Ezjsonm.t =
+let json_of_todo { title ; url ; completed ; _ }: Ezjsonm.t =
   let open Ezjsonm in
   dict [ "title", (string title)
        ; "url", (string url)
@@ -62,6 +62,14 @@ let get_todos = get "/todos" begin fun _ ->
     `Json (json_of_todos todos)
     |> respond'
 end
+
+let get_todo = get "/todos/:id" begin fun req ->
+  let todo = TodoStorage.find (int_of_string (param req "id")) !stored_todos;
+  in
+    `Json (json_of_todo todo)
+    |> respond'
+end
+
 
 let post_todos = post "/todos" begin fun request ->
   App.json_of_body_exn request 
@@ -78,7 +86,7 @@ let delete_todos = delete "/todos" begin fun _ ->
   respond' (`String "OK")
 end
 
-let accept_options = App.options "/:anything" begin fun _ -> 
+let accept_options = App.options "**" begin fun _ ->
   respond' (`String "OK")
 end
 
@@ -87,6 +95,7 @@ let _ =
   |> middleware allow_cors
   |> accept_options
   |> get_todos
+  |> get_todo
   |> delete_todos
   |> post_todos
   |> App.run_command
