@@ -21,6 +21,8 @@ let allow_cors =
     Rock.Middleware.create ~name:(Info.of_string "allow cors") ~filter
 
 type todo = {
+  id: int;
+  url: string;
   title: string;
   completed: bool;
 }
@@ -34,18 +36,21 @@ let get_or_else t path default =
     then (find t path)
     else default
 
-let todo_of_json json =
+let todo_of_json json id =
   let open Ezjsonm in
   {
+    id = id;
+    url = "http://54.72.243.203:3000/todos/" ^ string_of_int id;
     title = get_string (find json ["title"]);
     completed = get_bool (get_or_else json ["completed"] (bool false))
   }
 
 let todo_of_json json = todo_of_json (Ezjsonm.value json)
 
-let json_of_todo { title ; completed }: Ezjsonm.t =
+let json_of_todo { title ; url ; completed }: Ezjsonm.t =
   let open Ezjsonm in
   dict [ "title", (string title)
+       ; "url", (string url)
        ; "completed", (bool completed) ]
 
 let json_of_todos (todos: todo list): Ezjsonm.t =
@@ -61,8 +66,9 @@ end
 let post_todos = post "/todos" begin fun request ->
   App.json_of_body_exn request 
   >>| fun json ->
-    let todo = todo_of_json json in
-      stored_todos := TodoStorage.add (Random.int 100000) todo !stored_todos;
+    let id = (Random.int 100000) in
+    let todo = todo_of_json json id in
+      stored_todos := TodoStorage.add id todo !stored_todos;
       `Json (json_of_todo todo)
   |> respond
 end
