@@ -87,6 +87,11 @@ let patch_todo = App.patch "/todos/:id" begin fun request ->
       `Json (json_of_todo updated) |> respond
 end
 
+let delete_todo = App.delete "/todos/:id" begin fun request ->
+  stored_todos := TodoStorage.remove (int_of_string (param request "id")) !stored_todos;
+  respond' (`String "OK")
+end
+
 let post_todos = post "/todos" begin fun request ->
   App.json_of_body_exn request 
   >>| fun json ->
@@ -113,6 +118,7 @@ let _ =
   |> get_todos
   |> get_todo
   |> patch_todo
+  |> delete_todo
   |> delete_todos
   |> post_todos
   |> App.run_command
