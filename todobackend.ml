@@ -25,6 +25,7 @@ type todo = {
   url: string;
   title: string;
   completed: bool;
+  order: int;
 }
 
 module TodoStorage = Caml.Map.Make(Int)
@@ -42,7 +43,8 @@ let todo_of_json json id =
     id = id;
     url = "http://54.72.243.203:3000/todos/" ^ string_of_int id;
     title = get_string (find json ["title"]);
-    completed = get_bool (get_or_else json ["completed"] (bool false))
+    completed = get_bool (get_or_else json ["completed"] (bool false));
+    order = get_int (get_or_else json ["order"] (int 0))
   }
 
 let updated_todo todo json =
@@ -52,15 +54,17 @@ let updated_todo todo json =
     url = "http://54.72.243.203:3000/todos/" ^ string_of_int todo.id;
     title = get_string (get_or_else json ["title"] (string todo.title));
     completed = get_bool (get_or_else json ["completed"] (bool todo.completed));
+    order = get_int (get_or_else json ["order"] (int todo.order));
   }
 
 let todo_of_json json = todo_of_json (Ezjsonm.value json)
 
-let json_of_todo { title ; url ; completed ; _ }: Ezjsonm.t =
+let json_of_todo { title ; url ; completed ; order ; _ }: Ezjsonm.t =
   let open Ezjsonm in
   dict [ "title", (string title)
        ; "url", (string url)
-       ; "completed", (bool completed) ]
+       ; "completed", (bool completed) 
+       ; "order", (int order) ]
 
 let json_of_todos (todos: todo list): Ezjsonm.t =
   `A (List.map todos ~f:(fun json -> Ezjsonm.value (json_of_todo json)))
