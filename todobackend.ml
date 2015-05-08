@@ -45,6 +45,15 @@ let todo_of_json json id =
     completed = get_bool (get_or_else json ["completed"] (bool false))
   }
 
+let updated_todo todo json =
+  let open Ezjsonm in
+  {
+    id = todo.id;
+    url = "http://54.72.243.203:3000/todos/" ^ string_of_int todo.id;
+    title = get_string (get_or_else json ["title"] (string todo.title));
+    completed = get_bool (get_or_else json ["completed"] (bool todo.completed));
+  }
+
 let todo_of_json json = todo_of_json (Ezjsonm.value json)
 
 let json_of_todo { title ; url ; completed ; _ }: Ezjsonm.t =
@@ -70,6 +79,13 @@ let get_todo = get "/todos/:id" begin fun req ->
     |> respond'
 end
 
+let patch_todo = App.patch "/todos/:id" begin fun request ->
+  App.json_of_body_exn request >>| fun json ->
+    let todo = TodoStorage.find (int_of_string (param request "id")) !stored_todos in
+    let updated = updated_todo todo (Ezjsonm.value json) in
+      stored_todos := TodoStorage.add todo.id updated !stored_todos;
+      `Json (json_of_todo updated) |> respond
+end
 
 let post_todos = post "/todos" begin fun request ->
   App.json_of_body_exn request 
@@ -96,6 +112,7 @@ let _ =
   |> accept_options
   |> get_todos
   |> get_todo
+  |> patch_todo
   |> delete_todos
   |> post_todos
   |> App.run_command
