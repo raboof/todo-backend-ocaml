@@ -1,5 +1,8 @@
+open Lwt
 open Core_kernel.Std
-open Opium.Std
+open Fieldslib
+open Opium_kernel
+(*
 
 Random.self_init()
 
@@ -41,7 +44,7 @@ let todo_of_json json id =
   let open Ezjsonm in
   {
     id = id;
-    url = "http://54.72.243.203:3000/todos/" ^ string_of_int id;
+    url = "http://todo-backend-ocaml.bzzt.net:3000/todos/" ^ string_of_int id;
     title = get_string (find json ["title"]);
     completed = get_bool (get_or_else json ["completed"] (bool false));
     order = get_int (get_or_else json ["order"] (int 0))
@@ -51,7 +54,7 @@ let updated_todo todo json =
   let open Ezjsonm in
   {
     id = todo.id;
-    url = "http://54.72.243.203:3000/todos/" ^ string_of_int todo.id;
+    url = "http://todo-backend-ocaml.bzzt.net:3000/todos/" ^ string_of_int todo.id;
     title = get_string (get_or_else json ["title"] (string todo.title));
     completed = get_bool (get_or_else json ["completed"] (bool todo.completed));
     order = get_int (get_or_else json ["order"] (int todo.order));
@@ -115,14 +118,26 @@ let accept_options = App.options "**" begin fun _ ->
   respond' (`String "OK")
 end
 
-let _ =
-  App.empty
-  |> middleware allow_cors
-  |> accept_options
-  |> get_todos
-  |> get_todo
-  |> patch_todo
-  |> delete_todo
-  |> delete_todos
-  |> post_todos
-  |> App.run_command
+*)
+
+module Main (C: V1_LWT.CONSOLE) (S: Cohttp_lwt.Server) = struct
+  let start c s =
+(**
+    let a = App.empty in 
+    for_lwt i = 0 to 1 do
+    middleware allow_cors
+    |> accept_options
+    |> get_todos
+    |> get_todo
+    |> patch_todo
+    |> delete_todo
+    |> delete_todos
+    |> post_todos 
+    |> App.run_command;
+
+      return ()
+    done *)
+    let callback conn_id request body = 
+      return (Cohttp.Response.make(), Cohttp_lwt_body.empty) in
+    s (`TCP 8080) (S.make ~callback ())
+  end
